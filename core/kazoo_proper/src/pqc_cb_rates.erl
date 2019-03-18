@@ -275,11 +275,11 @@ correct() ->
                                     )
                    catch
                        ?STACKTRACE(_E, _R, ST)
-                           io:format("exception running commands: ~s:~p~n", [_E, _R]),
-                           [io:format("~p~n", [S]) || S <- ST],
-                           _ = cleanup(),
-                           'false'
-                   end
+                       io:format("exception running commands: ~s:~p~n", [_E, _R]),
+                       [io:format("~p~n", [S]) || S <- ST],
+                       _ = cleanup(),
+                       'false'
+                       end
 
                end
               )
