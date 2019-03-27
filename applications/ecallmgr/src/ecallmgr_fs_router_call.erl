@@ -170,6 +170,8 @@ process_route_req(Section, Node, FetchId, CallId, Props) ->
 
 -spec do_process_route_req(atom(), atom(), kz_term:ne_binary(), kz_term:ne_binary(), kzd_freeswitch:data()) -> 'ok'.
 do_process_route_req(Section, Node, FetchId, CallId, Props) ->
+    Start = kz_time:now(),
+
     Filtered = ecallmgr_fs_loopback:filter(Node, CallId, Props),
     case ecallmgr_fs_router_util:search_for_route(Section, Node, FetchId, CallId, Filtered) of
         'ok' ->
@@ -177,22 +179,22 @@ do_process_route_req(Section, Node, FetchId, CallId, Props) ->
         {'ok', JObj} ->
             lager:debug("route response recv, attempting to start call handling"),
             ecallmgr_fs_channels:update(CallId, #channel.handling_locally, 'true'),
-            maybe_start_call_handling(Node, FetchId, CallId, JObj)
+            maybe_start_call_handling(Node, FetchId, CallId, JObj, Start)
     end.
 
--spec maybe_start_call_handling(atom(), kz_term:ne_binary(), kz_term:ne_binary(), kz_json:object()) -> 'ok'.
-maybe_start_call_handling(Node, FetchId, CallId, JObj) ->
+-spec maybe_start_call_handling(atom(), kz_term:ne_binary(), kz_term:ne_binary(), kz_json:object(), kz_time:now()) -> 'ok'.
+maybe_start_call_handling(Node, FetchId, CallId, JObj, Start) ->
     case kz_json:get_value(<<"Method">>, JObj) of
         <<"error">> -> lager:debug("sent error response to ~s, not starting call handling", [Node]);
-        _Else -> start_call_handling(Node, FetchId, CallId, JObj)
+        _Else -> start_call_handling(Node, FetchId, CallId, JObj, Start)
     end.
 
--spec start_call_handling(atom(), kz_term:ne_binary(), kz_term:ne_binary(), kz_json:object()) -> 'ok'.
-start_call_handling(Node, FetchId, CallId, JObj) ->
-    ServerQ = kz_json:get_value(<<"Server-ID">>, JObj),
+-spec start_call_handling(atom(), kz_term:ne_binary(), kz_term:ne_binary(), kz_json:object(), kz_time:now()) -> 'ok'.
+start_call_handling(Node, FetchId, CallId, JObj, Start) ->
+    ServerQ = kz_api:server_id(JObj),
     CCVs =
-        kz_json:set_values([{<<"Application-Name">>, kz_json:get_value(<<"App-Name">>, JObj)}
-                           ,{<<"Application-Node">>, kz_json:get_value(<<"Node">>, JObj)}
+        kz_json:set_values([{<<"Application-Name">>, kz_api:app_name(JObj)}
+                           ,{<<"Application-Node">>, kz_api:node(JObj)}
                            ]
                           ,kz_json:get_json_value(<<"Custom-Channel-Vars">>, JObj, kz_json:new())
                           ),
@@ -202,4 +204,4 @@ start_call_handling(Node, FetchId, CallId, JObj) ->
     lager:debug("started event ~p and control ~p processes", [_Evt, _Ctl]),
 
     _ = ecallmgr_fs_command:set(Node, CallId, kz_json:to_proplist(CCVs)),
-    lager:debug("xml fetch dialplan ~s finished with success", [FetchId]).
+    lager:debug("xml fetch dialplan ~s finished with success after ~pms", [FetchId, kz_time:elapsed_ms(Start)]).
