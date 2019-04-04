@@ -16,7 +16,7 @@
         ,next_state/3
         ,postcondition/3
 
-        %% kapps_maintenance:check_release callback
+         %% kapps_maintenance:check_release callback
         ,seq/0
         ]).
 
@@ -184,7 +184,7 @@ enable_and_delete_topup() ->
 -spec cleanup(pqc_cb_api:state()) -> any().
 cleanup(API) ->
     ?INFO("CLEANUP TIME, EVERYBODY HELPS"),
-    _ = pqc_cb_accounts:cleanup_accounts(API, ?ACCOUNT_NAMES),
+    _ = cleanup_accounts(API, ?ACCOUNT_NAMES),
     _ = pqc_cb_api:cleanup(API).
 
 -spec topup_request(kz_term:ne_binary(), pqc_cb_api:state(), kz_json:object()) -> pqc_cb_api:response().

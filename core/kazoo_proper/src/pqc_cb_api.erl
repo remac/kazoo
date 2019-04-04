@@ -331,7 +331,7 @@ init_api(AppsToStart, ModulesToStart) when is_list(AppsToStart)
 -spec initial_state([atom()], [module()]) -> pqc_kazoo_model:model().
 initial_state(AppsToStart, ModulesToStart) ->
     _ = init_system(AppsToStart, ModulesToStart),
-    API = pqc_cb_api:authenticate(),
+    API = authenticate(),
     pqc_kazoo_model:new(API).
 
 -spec init_system([atom()], [module()]) -> 'ok'.
