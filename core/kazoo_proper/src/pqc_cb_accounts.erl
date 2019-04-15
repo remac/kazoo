@@ -161,7 +161,7 @@ enable_and_delete_topup() ->
 
     AccountJObj = kz_json:get_value(<<"data">>, kz_json:decode(AccountResp)),
     AccountId = kz_json:get_binary_value(<<"id">>, AccountJObj),
-    TopupConfig = {[{<<"threshold">>,10},{<<"amount">>,50}]},
+    TopupConfig = kz_json:from_list([{<<"threshold">>,10},{<<"amount">>,50}]),
     RequestData = kz_json:set_value(<<"topup">>, TopupConfig, AccountJObj),
     RequestEnvelope = pqc_cb_api:create_envelope(RequestData),
 
