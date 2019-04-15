@@ -1537,11 +1537,8 @@ validate_schema(ParentId, AccountId, {Doc, Errors}) ->
 validate_passed(ParentId, 'undefined', {Doc, Errors}) ->
     lager:info("validation passed for new account: ~s", [kz_json:encode(Doc)]),
     {set_private_properties(ParentId, Doc), Errors};
-validate_passed(_ParentId, AccountId, {Doc, Errors}) ->
-    case update(AccountId, kz_json:to_proplist(kz_json:flatten(Doc))) of
-        {'ok', UpdatedAccount} -> {UpdatedAccount, Errors};
-        {'error', _E} -> {Doc, Errors}
-    end.
+validate_passed(_ParentId, _AccountId, {Doc, Errors}) ->
+    {Doc, Errors}.
 
 -spec validate_account_schema(kz_term:api_ne_binary(), kz_term:api_ne_binary(), doc(), validation_errors(), kz_json:object()) ->
                                      validate_acc().
