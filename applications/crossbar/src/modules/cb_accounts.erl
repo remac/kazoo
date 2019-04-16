@@ -280,17 +280,20 @@ add_pvt_api_key(Context) ->
 -spec post(cb_context:context(), path_token()) -> cb_context:context().
 post(Context, AccountId) ->
     {'ok', Existing} = kzd_accounts:fetch(AccountId),
-    Context1 = crossbar_doc:save(Context),
-
-    case cb_context:resp_status(Context1) of
-        'success' ->
+    New = new_account_doc_from_changes(Existing, cb_context:req_data(Context)),
+    case kzd_accounts:save(New) of
+        {'ok', SavedAccount} ->
+            Context1 = crossbar_doc:handle_datamgr_success(SavedAccount, Context),
             _ = kz_util:spawn(fun notification_util:maybe_notify_account_change/2, [Existing, Context]),
             update_provisioner_account(Context1),
 
-            {'ok', SavedAccount} = kzd_accounts:save(cb_context:doc(Context1)),
-
-            leak_pvt_fields(AccountId, cb_context:set_doc(Context1, SavedAccount));
-        _Status -> Context1
+            leak_pvt_fields(AccountId, Context1);
+        _Err ->
+            lager:warning("failed to update account information with error: ~p", [_Err]),
+            cb_context:setters(Context, [{fun cb_context:set_resp_error_code/2, 500}
+                                        ,{fun cb_context:set_resp_status/2, 'error'}
+                                        ,{fun cb_context:set_resp_error_msg/2, <<"Internal Server Error">>}
+                                        ])
     end.
 
 -spec update_provisioner_account(cb_context:context()) -> 'ok'.
@@ -557,6 +560,7 @@ add_validation_errors(Context, ValidationErrors) ->
 add_validation_error({Path, Reason, Msg}, Context) ->
     cb_context:add_validation_error(Path, Reason, Msg, Context).
 
+-spec extra_validation(kz_term:ne_binary(), cb_context:context()) -> cb_context:context().
 extra_validation(AccountId, Context) ->
     Extra = [fun(_, C) -> maybe_import_enabled(C) end
             ,fun disallow_direct_clients/2
@@ -1167,3 +1171,31 @@ notify_new_account(Context, _AuthDoc) ->
               | kz_api:default_headers(?APP_VERSION, ?APP_NAME)
              ],
     kapps_notify_publisher:cast(Notify, fun kapi_notifications:publish_new_account/1).
+
+%%------------------------------------------------------------------------------
+%% @doc Build a new account document based on the differences between the existing document
+%% and the changes being processed.
+%% @end
+%%------------------------------------------------------------------------------
+-spec is_private_key(binary()) -> boolean().
+is_private_key(<<"id">>) -> 'true';
+is_private_key(K) -> kz_doc:is_private_key(K).
+
+-spec filter_private_keys(kz_json:object()) -> [{kz_term:ne_binary(), any()}].
+filter_private_keys(Doc) ->
+    F = fun({K, _V}) -> not is_private_key(K) end,
+    lists:filter(F, kz_json:to_proplist(Doc)).
+
+-spec new_account_doc_from_changes(kz_json:object(), kz_json:object()) -> kz_json:object().
+new_account_doc_from_changes(Existing, New) ->
+    case kz_json:are_equal(Existing, New) of
+        'false' ->
+            ExistingProps = filter_private_keys(Existing),
+            NewProps = filter_private_keys(New),
+            DeletedKeys = props:get_keys(ExistingProps) -- props:get_keys(NewProps),
+            %% Create a copy of `Existing' obj without the deleted keys.
+            New1 = kz_json:delete_keys(DeletedKeys, Existing),
+            kz_json:set_values(NewProps, New1);
+        'true' ->
+            Existing
+    end.
