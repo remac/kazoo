@@ -151,7 +151,7 @@ seq() ->
 
 -spec enable_and_delete_topup() -> 'ok'.
 enable_and_delete_topup() ->
-    API = pqc_cb_api:init_api(['crossbar'], ['cb_cdrs']),
+    API = pqc_cb_api:init_api(['crossbar'], ['cb_accounts']),
 
     %% Make sure everything is clean for the test.
     cleanup(API),
