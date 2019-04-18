@@ -19,7 +19,7 @@
                                 ,{<<"outbound_trunks">>, 0}
                                 ,{<<"reserve_amount">>, 0}
                                 ,{<<"resource_consuming_calls">>, 4}
-                                ,{<<"soft_limit_inbound">>, 'false        '}
+                                ,{<<"soft_limit_inbound">>, 'false'}
                                 ,{<<"soft_limit_outbound">>, 'false'}
                                 ]
                                ,kz_json:new()
