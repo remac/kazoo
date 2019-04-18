@@ -12,7 +12,7 @@
                                 ,{<<"allow_prepay">>, 'true'}
                                 ,{<<"authz_resource_type">>, []}
                                 ,{<<"burst_trunks">>, 0}
-                                ,{<<"calls">>, 0}
+                                ,{<<"calls">>, 4}
                                 ,{<<"enabled">>, 'true'}
                                 ,{<<"inbound_trunks">>, 0}
                                 ,{<<"max_postpay_account">>, 0}
@@ -27,6 +27,16 @@
        ).
 -define(EMPTY, kz_json:new()).
 
+-spec calls_test_() -> 'ok'.
+calls_test_() ->
+    [?_assertEqual(4, kzd_limits:calls(?DOC))
+    ,?_assertEqual(4, kzd_limits:calls(kzd_limits:set_pvt_calls(?DOC, -1)))
+    ,?_assertEqual(10, kzd_limits:calls(kz_json:delete_key(<<"calls">>, kzd_limits:set_pvt_calls(?DOC, 10))))
+    ,?_assertEqual(-1, kzd_limits:calls(kz_json:delete_key(<<"calls">>, ?DOC)))
+    ,?_assertEqual(5, kzd_limits:calls(kzd_limits:set_calls(kzd_limits:set_pvt_calls(?DOC, 10), 5)))
+    ,?_assertEqual(5, kzd_limits:calls(kzd_limits:set_calls(kzd_limits:set_pvt_calls(?DOC, 5), 10)))
+    ].
+
 -spec resource_consuming_calls_test_() -> 'ok'.
 resource_consuming_calls_test_() ->
     [?_assertEqual(4, kzd_limits:resource_consuming_calls(?DOC))
@@ -34,5 +44,5 @@ resource_consuming_calls_test_() ->
     ,?_assertEqual(10, kzd_limits:resource_consuming_calls(kz_json:delete_key(<<"resource_consuming_calls">>, kzd_limits:set_pvt_resource_consuming_calls(?DOC, 10))))
     ,?_assertEqual(-1, kzd_limits:resource_consuming_calls(kz_json:delete_key(<<"resource_consuming_calls">>, ?DOC)))
     ,?_assertEqual(5, kzd_limits:resource_consuming_calls(kzd_limits:set_resource_consuming_calls(kzd_limits:set_pvt_resource_consuming_calls(?DOC, 10), 5)))
+    ,?_assertEqual(5, kzd_limits:resource_consuming_calls(kzd_limits:set_resource_consuming_calls(kzd_limits:set_pvt_resource_consuming_calls(?DOC, 5), 10)))
     ].
-
