@@ -106,7 +106,9 @@
 -export([sum_jobjs/1, sum_jobjs/2]).
 -export_type([sumer/0]).
 
--export([order_by/3]).
+-export([order_by/3
+        ,check_value_term/1
+        ]).
 
 -export([lift_common_properties/1, lift_common_properties/2]).
 
